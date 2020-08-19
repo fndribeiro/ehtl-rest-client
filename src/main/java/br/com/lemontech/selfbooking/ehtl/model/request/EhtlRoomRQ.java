@@ -1,10 +1,10 @@
 package br.com.lemontech.selfbooking.ehtl.model.request;
 
-public class EHTLRoomRQ extends EHTLAttributesRQ {
+public class EhtlRoomRQ extends EhtlAttributesRQ {
 
 	private int adults;
 
-	public EHTLRoomRQ() {
+	public EhtlRoomRQ() {
 	}
 
 	public int getAdults() {

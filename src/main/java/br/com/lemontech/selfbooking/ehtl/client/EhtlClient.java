@@ -8,19 +8,19 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 
-import br.com.lemontech.selfbooking.ehtl.model.response.EHTLTokenRS;
+import br.com.lemontech.selfbooking.ehtl.model.response.EhtlTokenRS;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 @Component
-public class EHTLClient {
+public class EhtlClient {
 
-	private final Logger log = LoggerFactory.getLogger(EHTLClient.class);
+	private final Logger log = LoggerFactory.getLogger(EhtlClient.class);
 	private final String baseUrl = "http://integration-quasar.e-htl.com.br";
 
 	private WebClient webClient;
 
-	public EHTLClient() {
+	public EhtlClient() {
 		this.webClient = WebClient.create(baseUrl);
 	}	
 	
@@ -41,7 +41,7 @@ public class EHTLClient {
 	}
 
 	// monta o request com token no header
-	public  RequestBodySpec setTokenRequest(RequestBodySpec request, EHTLTokenRS token) {
+	public  RequestBodySpec setTokenRequest(RequestBodySpec request, EhtlTokenRS token) {
 
 		String header = token.getTokenType() + " " + token.getAccessToken();
 		return request.header("Authorization", header);
