@@ -118,6 +118,20 @@ public class EhtlService {
 		return mapper.readValue(response.block(), EhtlRS.class);
 	}
 	
+	public EhtlRS cancelaReserva(String bookingId) throws InvalidTokenException, JsonMappingException, JsonProcessingException {
+		
+		validaToken();
+		
+		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.DELETE).uri(EhtlUri.cancelBooking + bookingId);
+		RequestHeadersSpec<?> request = client.setTokenRequest(requestBuilder, token);
+		
+		Mono<String> response = client.getResponse(request);
+		
+		ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+		
+		return mapper.readValue(response.block(), EhtlRS.class);
+	}
+	
 	private void validaToken() throws InvalidTokenException {
 
 		if (StringUtil.isEmpty(this.token.getAccessToken())) {

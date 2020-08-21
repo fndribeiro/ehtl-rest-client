@@ -1,10 +1,6 @@
 package br.com.ribeiro.fernando.ehtl;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -23,7 +19,6 @@ import org.springframework.web.reactive.function.client.WebClient.RequestHeaders
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import br.com.lemontech.selfbooking.ehtl.client.EhtlClient;
 import br.com.lemontech.selfbooking.ehtl.client.EhtlLogin;
@@ -36,8 +31,8 @@ import br.com.lemontech.selfbooking.ehtl.model.request.EhtlRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlPassengerRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlPaymentTypeRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlRoomPassengerRQ;
-import br.com.lemontech.selfbooking.ehtl.model.response.EhtlBookingAttributesRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlBookingRS;
+import br.com.lemontech.selfbooking.ehtl.model.response.EhtlCancelBookingRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlDataRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlDetailsHotelAvailabilitiesRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlHotelAvailabilitiesRS;
@@ -207,8 +202,7 @@ class EhtlApplicationTests {
 		// faz request de detalhes do quarto com códigos obtidos na disponibilidade
 		EhtlRS responseDetalhesDoQuarto = ehtlService.getDetalhesDoQuarto(hotel.getId(),
 				hotel.getAttributes().getHotelRooms().get(0).getRoomCode());
-		EhtlDataRS detalhesDoQuarto = responseDetalhesDoQuarto.getData().get(0);
-		EhtlDetailsHotelAvailabilitiesRS quarto = (EhtlDetailsHotelAvailabilitiesRS) detalhesDoQuarto;
+		responseDetalhesDoQuarto.getData().get(0);
 		
 		// seta passageiro do quarto que será reservado.
 		EhtlRoomPassengerRQ roomsPassenger = new EhtlRoomPassengerRQ();
@@ -234,9 +228,59 @@ class EhtlApplicationTests {
 		
 		EhtlBookingRS reserva = (EhtlBookingRS) getReserva;
 		
-		// implementar asserts
-		System.out.println(reserva.getAttributes().getLocatorCode());
-		System.out.println(reserva.getAttributes().getDeadlineCancellation());
+		Assert.notNull(reserva.getAttributes().getLocatorCode(), "Localizador não pode ser null.");
+		Assert.notNull(reserva.getAttributes().getDeadlineCancellation(), "Prazo de cancelamento não pode ser null.");
+	}
+	
+	@Test
+	void cancelaReserva() throws JsonMappingException, JsonProcessingException, InvalidTokenException {
+		
+		EhtlService ehtlService = new EhtlService("85213", "agenciaws@050539464720802020");
+		
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2020, 10, 10);
+
+		Date checkin = calendar.getTime();
+		
+		// pega disponibilidade, guarda código hotel e código quarto necessários para próximo request
+		EhtlRS responseDisponibilidade = ehtlService.getDisponibilidade("Y2l0eS0yMDY", checkin, 2, 1);
+		EhtlDataRS hoteisDisponibilidade = responseDisponibilidade.getData().get(1);
+		EhtlHotelAvailabilitiesRS hotel = (EhtlHotelAvailabilitiesRS) hoteisDisponibilidade;
+
+		// faz request de detalhes do quarto com códigos obtidos na disponibilidade
+		EhtlRS responseDetalhesDoQuarto = ehtlService.getDetalhesDoQuarto(hotel.getId(),
+				hotel.getAttributes().getHotelRooms().get(0).getRoomCode());
+		responseDetalhesDoQuarto.getData().get(0);
+		
+		// seta passageiro do quarto que será reservado.
+		EhtlRoomPassengerRQ roomsPassenger = new EhtlRoomPassengerRQ();
+		roomsPassenger.setName("Giovanna");
+		roomsPassenger.setLastName("Lucchesi");
+		roomsPassenger.setEmail("glucchesi@gmail.com");
+		
+		EhtlPassengerRQ passengers = new EhtlPassengerRQ();
+		passengers.setRoomsPassenger(roomsPassenger);
+		
+		// seta objeto para request de reserva
+		EhtlCompleteBookingProcessRQ reservaModel = new EhtlCompleteBookingProcessRQ();		
+		reservaModel.setName("Fernando Ribeiro");
+		reservaModel.setLastName("Ribeiro");
+		reservaModel.setEmail("fribeiro@lemontech.com.br");
+		reservaModel.setPhone(31386248);
+		reservaModel.setPassengers(passengers);
+		reservaModel.setPaymentsTypes(EhtlPaymentTypeRQ.invoice_daily_and_extras);
+		
+		// cria reserva
+		EhtlRS responseCriarReserva = ehtlService.criaReserva(reservaModel);		
+		EhtlDataRS getReserva = responseCriarReserva.getData().get(0);		
+		EhtlBookingRS reserva = (EhtlBookingRS) getReserva;
+		
+		// cancela reserva
+		EhtlRS responseCancelarReserva = ehtlService.cancelaReserva(reserva.getId());		
+		EhtlDataRS getCancelamento = responseCancelarReserva.getData().get(0);		
+		EhtlCancelBookingRS responseCancelamento = (EhtlCancelBookingRS) getCancelamento;
+		
+		Assert.isTrue(responseCancelamento.getAttributes().isCanceled(), "Reserva deve estar cancelada.");	
 	}
 
 }

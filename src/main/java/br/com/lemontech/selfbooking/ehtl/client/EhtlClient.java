@@ -41,10 +41,10 @@ public class EhtlClient {
 	}
 
 	// monta o request com token no header
-	public  RequestBodySpec setTokenRequest(RequestBodySpec request, EhtlTokenRS token) {
+	public  RequestBodySpec setTokenRequest(RequestBodySpec requestBuilder, EhtlTokenRS token) {
 
 		String header = token.getTokenType() + " " + token.getAccessToken();
-		return request.header("Authorization", header);
+		return requestBuilder.header("Authorization", header);
 	}
 
 	// pega response e monta em classe mono<string>

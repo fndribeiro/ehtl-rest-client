@@ -10,7 +10,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 @JsonSubTypes({ 
 	@Type(value = EhtlHotelAvailabilitiesRS.class, name = "hotelsAvailabilities"),
 	@Type(value = EhtlDetailsHotelAvailabilitiesRS.class, name = "bookingDetail"),
-	@Type(value = EhtlBookingRS.class, name = "booking")
+	@Type(value = EhtlBookingRS.class, name = "booking"),
+	@Type(value = EhtlCancelBookingRS.class, name = "book-cancel")
 })
 public abstract class EhtlDataRS {
 	

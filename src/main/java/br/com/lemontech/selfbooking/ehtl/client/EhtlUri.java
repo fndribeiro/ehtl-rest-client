@@ -6,5 +6,6 @@ public final class EhtlUri {
 	public static String hotelAvailabilities = "/booking/hotels-availabilities";
 	public static String detailHotelAvaiabilities = "/booking/detail";
 	public static String completeBookingProcess = "/booking/book-hotel";
+	public static String cancelBooking = "/booking/cancel/";
 	
 }
