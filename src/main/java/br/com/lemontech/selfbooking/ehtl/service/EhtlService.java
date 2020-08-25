@@ -31,29 +31,29 @@ public class EhtlService {
 
 	private EhtlTokenRS token;
 	private EhtlClient client = new EhtlClient();
-	
-	//instancia a classe e já cria um token.
+
+	// instancia a classe e já cria um token.
 	public EhtlService(String username, String password) throws JsonMappingException, JsonProcessingException {
-		
+
 		EhtlLogin login = new EhtlLogin(username, password);
-		
+
 		RequestHeadersSpec<?> request = client.getWebClient().method(HttpMethod.POST).uri(EhtlUri.accessToken)
 				.bodyValue(login);
-		
+
 		Mono<String> response = client.getResponse(request);
-		
+
 		ObjectMapper mapper = new ObjectMapper();
-		
+
 		this.token = mapper.readValue(response.block(), EhtlTokenRS.class);
 	}
-	
+
 	public EhtlTokenRS getToken() throws InvalidTokenException {
-		
+
 		validaToken();
 		return this.token;
 	}
 
-	public EhtlRS getDisponibilidade(String destinationId, Date checkin, int nights, int roomsAmount) 
+	public EhtlRS getDisponibilidade(String destinationId, Date checkin, int nights, int roomsAmount)
 			throws JsonMappingException, JsonProcessingException, InvalidTokenException {
 
 		validaToken();
@@ -69,69 +69,86 @@ public class EhtlService {
 
 		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.POST).uri(EhtlUri.hotelAvailabilities);
 		RequestHeadersSpec<?> request = client.setTokenRequest(requestBuilder, token).bodyValue(requestBody);
-		
+
 		Mono<String> response = client.getResponse(request);
-		
+
 		ObjectMapper mapper = new ObjectMapper();
-		
+
 		return mapper.readValue(response.block(), EhtlRS.class);
 	}
-	
-	public EhtlRS getDetalhesDoQuarto(String hotelCode, String roomCode) 
+
+	public EhtlRS getDetalhesDoQuarto(String hotelCode, String roomCode)
 			throws InvalidTokenException, JsonMappingException, JsonProcessingException {
-		
+
 		validaToken();
-		
+
 		EhtlDetailsHotelAvailabilitiesRQ detalhesDoHotel = new EhtlDetailsHotelAvailabilitiesRQ();
 		detalhesDoHotel.setHotelCode(hotelCode);
 		detalhesDoHotel.setRoomCode(roomCode);
-		
+
 		EhtlDataRQ data = new EhtlDataRQ(detalhesDoHotel);
 		EhtlRQ requestBody = new EhtlRQ(data);
-		
-		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.POST).uri(EhtlUri.detailHotelAvaiabilities);		
+
+		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.POST)
+				.uri(EhtlUri.detailHotelAvaiabilities);
 		RequestHeadersSpec<?> request = client.setTokenRequest(requestBuilder, token).bodyValue(requestBody);
-		
+
 		Mono<String> response = client.getResponse(request);
-		
+
 		ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		mapper.setDateFormat(dateFormat);
-		
+
 		return mapper.readValue(response.block(), EhtlRS.class);
 	}
-	
-	public EhtlRS criaReserva(EhtlCompleteBookingProcessRQ reservaModel) throws InvalidTokenException, JsonMappingException, JsonProcessingException {
-		
+
+	public EhtlRS criaReserva(EhtlCompleteBookingProcessRQ reservaModel)
+			throws InvalidTokenException, JsonMappingException, JsonProcessingException {
+
 		validaToken();
-		
+
 		EhtlDataRQ data = new EhtlDataRQ(reservaModel);
 		EhtlRQ requestBody = new EhtlRQ(data);
-		
-		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.POST).uri(EhtlUri.completeBookingProcess);		
+
+		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.POST)
+				.uri(EhtlUri.completeBookingProcess);
 		RequestHeadersSpec<?> request = client.setTokenRequest(requestBuilder, token).bodyValue(requestBody);
-		
+
 		Mono<String> response = client.getResponse(request);
-	
+
 		ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
-		
+
 		return mapper.readValue(response.block(), EhtlRS.class);
 	}
-	
-	public EhtlRS cancelaReserva(String bookingId) throws InvalidTokenException, JsonMappingException, JsonProcessingException {
-		
+
+	public EhtlRS cancelaReserva(String bookingId)
+			throws InvalidTokenException, JsonMappingException, JsonProcessingException {
+
 		validaToken();
-		
-		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.DELETE).uri(EhtlUri.cancelBooking + bookingId);
+
+		RequestBodySpec requestBuilder = client.getWebClient().method(HttpMethod.DELETE)
+				.uri(EhtlUri.cancelBooking + bookingId);
 		RequestHeadersSpec<?> request = client.setTokenRequest(requestBuilder, token);
-		
+
 		Mono<String> response = client.getResponse(request);
-		
+
 		ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
-		
+
 		return mapper.readValue(response.block(), EhtlRS.class);
 	}
-	
+
+	public EhtlRS getIdCidade(String nomeCidade) throws JsonMappingException, JsonProcessingException {
+
+		RequestBodySpec request = client.getWebClient().method(HttpMethod.GET)
+				.uri(uriBuilder -> uriBuilder.path(EhtlUri.searchCities).queryParam("query", nomeCidade).build());
+
+		Mono<String> response = client.getResponse(request);
+
+		ObjectMapper mapper = new ObjectMapper();
+
+		return mapper.readValue(response.block(), EhtlRS.class);
+	}
+
 	private void validaToken() throws InvalidTokenException {
 
 		if (StringUtil.isEmpty(this.token.getAccessToken())) {

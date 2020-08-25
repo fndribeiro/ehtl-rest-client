@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfiguration.WebFluxConfig;
@@ -14,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.util.Assert;
-import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,9 +25,6 @@ import br.com.lemontech.selfbooking.ehtl.client.EhtlLogin;
 import br.com.lemontech.selfbooking.ehtl.client.EhtlUri;
 import br.com.lemontech.selfbooking.ehtl.exception.InvalidTokenException;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlCompleteBookingProcessRQ;
-import br.com.lemontech.selfbooking.ehtl.model.request.EhtlDataRQ;
-import br.com.lemontech.selfbooking.ehtl.model.request.EhtlHotelAvailabilitiesRQ;
-import br.com.lemontech.selfbooking.ehtl.model.request.EhtlRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlPassengerRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlPaymentTypeRQ;
 import br.com.lemontech.selfbooking.ehtl.model.request.EhtlRoomPassengerRQ;
@@ -39,6 +36,7 @@ import br.com.lemontech.selfbooking.ehtl.model.response.EhtlHotelAvailabilitiesR
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlHotelTaxRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlRoomRS;
+import br.com.lemontech.selfbooking.ehtl.model.response.EhtlSearchCitiesRS;
 import br.com.lemontech.selfbooking.ehtl.model.response.EhtlTokenRS;
 import br.com.lemontech.selfbooking.ehtl.service.EhtlService;
 import reactor.core.publisher.Mono;
@@ -84,35 +82,6 @@ class EhtlApplicationTests {
 
 		Assert.notNull(token, "Classe não pode ser null.");
 		Assert.notNull(token.getAccessToken(), "Token não pode ser null.");
-	}
-
-	@Test
-	void disponibilidadeStatus200() throws JsonMappingException, JsonProcessingException, InvalidTokenException {
-
-		EhtlService ehtlService = new EhtlService("85213", "agenciaws@050539464720802020");
-		EhtlHotelAvailabilitiesRQ disp = new EhtlHotelAvailabilitiesRQ();
-		EhtlClient client = new EhtlClient();
-
-		Calendar calendar = Calendar.getInstance();
-		calendar.set(2020, 10, 10);
-
-		Date date = calendar.getTime();
-
-		disp.setDestinationId("Y2l0eS0yMDY");
-		disp.setCheckin(date);
-		disp.setNights(1);
-		disp.setRoomsAmount(1);
-
-		EhtlDataRQ data = new EhtlDataRQ(disp);
-		EhtlRQ bodyRequest = new EhtlRQ(data);
-
-		EhtlTokenRS token = ehtlService.getToken();
-		RequestBodySpec montaRequest = client.getWebClient().method(HttpMethod.POST).uri(EhtlUri.hotelAvailabilities);
-		RequestHeadersSpec<?> request = client.setTokenRequest(montaRequest, token).bodyValue(bodyRequest);
-		ResponseEntity<String> response = request.retrieve().toEntity(String.class).block();
-
-		Assert.isTrue(response.getStatusCode() == HttpStatus.OK,
-				"Status não pode ser diferente de 200." + " Status: " + response.getStatusCode());
 	}
 
 	@Test
@@ -193,8 +162,9 @@ class EhtlApplicationTests {
 		calendar.set(2020, 10, 10);
 
 		Date checkin = calendar.getTime();
-		
-		// pega disponibilidade, guarda código hotel e código quarto necessários para próximo request
+
+		// pega disponibilidade, guarda código hotel e código quarto necessários para
+		// próximo request
 		EhtlRS responseDisponibilidade = ehtlService.getDisponibilidade("Y2l0eS0yMDY", checkin, 2, 1);
 		EhtlDataRS hoteisDisponibilidade = responseDisponibilidade.getData().get(1);
 		EhtlHotelAvailabilitiesRS hotel = (EhtlHotelAvailabilitiesRS) hoteisDisponibilidade;
@@ -203,46 +173,47 @@ class EhtlApplicationTests {
 		EhtlRS responseDetalhesDoQuarto = ehtlService.getDetalhesDoQuarto(hotel.getId(),
 				hotel.getAttributes().getHotelRooms().get(0).getRoomCode());
 		responseDetalhesDoQuarto.getData().get(0);
-		
+
 		// seta passageiro do quarto que será reservado.
 		EhtlRoomPassengerRQ roomsPassenger = new EhtlRoomPassengerRQ();
 		roomsPassenger.setName("Giovanna");
 		roomsPassenger.setLastName("Lucchesi");
 		roomsPassenger.setEmail("glucchesi@gmail.com");
-		
+
 		EhtlPassengerRQ passengers = new EhtlPassengerRQ();
 		passengers.setRoomsPassenger(roomsPassenger);
-		
+
 		// seta objeto para request de reserva
-		EhtlCompleteBookingProcessRQ reservaModel = new EhtlCompleteBookingProcessRQ();		
+		EhtlCompleteBookingProcessRQ reservaModel = new EhtlCompleteBookingProcessRQ();
 		reservaModel.setName("Fernando Ribeiro");
 		reservaModel.setLastName("Ribeiro");
 		reservaModel.setEmail("fribeiro@lemontech.com.br");
 		reservaModel.setPhone(31386248);
 		reservaModel.setPassengers(passengers);
 		reservaModel.setPaymentsTypes(EhtlPaymentTypeRQ.invoice_daily_and_extras);
-		
+
 		EhtlRS response = ehtlService.criaReserva(reservaModel);
-		
+
 		EhtlDataRS getReserva = response.getData().get(0);
-		
+
 		EhtlBookingRS reserva = (EhtlBookingRS) getReserva;
-		
+
 		Assert.notNull(reserva.getAttributes().getLocatorCode(), "Localizador não pode ser null.");
 		Assert.notNull(reserva.getAttributes().getDeadlineCancellation(), "Prazo de cancelamento não pode ser null.");
 	}
-	
+
 	@Test
 	void cancelaReserva() throws JsonMappingException, JsonProcessingException, InvalidTokenException {
-		
+
 		EhtlService ehtlService = new EhtlService("85213", "agenciaws@050539464720802020");
-		
+
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(2020, 10, 10);
 
 		Date checkin = calendar.getTime();
-		
-		// pega disponibilidade, guarda código hotel e código quarto necessários para próximo request
+
+		// pega disponibilidade, guarda código hotel e código quarto necessários para
+		// próximo request
 		EhtlRS responseDisponibilidade = ehtlService.getDisponibilidade("Y2l0eS0yMDY", checkin, 2, 1);
 		EhtlDataRS hoteisDisponibilidade = responseDisponibilidade.getData().get(1);
 		EhtlHotelAvailabilitiesRS hotel = (EhtlHotelAvailabilitiesRS) hoteisDisponibilidade;
@@ -251,36 +222,66 @@ class EhtlApplicationTests {
 		EhtlRS responseDetalhesDoQuarto = ehtlService.getDetalhesDoQuarto(hotel.getId(),
 				hotel.getAttributes().getHotelRooms().get(0).getRoomCode());
 		responseDetalhesDoQuarto.getData().get(0);
-		
+
 		// seta passageiro do quarto que será reservado.
 		EhtlRoomPassengerRQ roomsPassenger = new EhtlRoomPassengerRQ();
 		roomsPassenger.setName("Giovanna");
 		roomsPassenger.setLastName("Lucchesi");
 		roomsPassenger.setEmail("glucchesi@gmail.com");
-		
+
 		EhtlPassengerRQ passengers = new EhtlPassengerRQ();
 		passengers.setRoomsPassenger(roomsPassenger);
-		
+
 		// seta objeto para request de reserva
-		EhtlCompleteBookingProcessRQ reservaModel = new EhtlCompleteBookingProcessRQ();		
+		EhtlCompleteBookingProcessRQ reservaModel = new EhtlCompleteBookingProcessRQ();
 		reservaModel.setName("Fernando Ribeiro");
 		reservaModel.setLastName("Ribeiro");
 		reservaModel.setEmail("fribeiro@lemontech.com.br");
 		reservaModel.setPhone(31386248);
 		reservaModel.setPassengers(passengers);
 		reservaModel.setPaymentsTypes(EhtlPaymentTypeRQ.invoice_daily_and_extras);
-		
+
 		// cria reserva
-		EhtlRS responseCriarReserva = ehtlService.criaReserva(reservaModel);		
-		EhtlDataRS getReserva = responseCriarReserva.getData().get(0);		
+		EhtlRS responseCriarReserva = ehtlService.criaReserva(reservaModel);
+		EhtlDataRS getReserva = responseCriarReserva.getData().get(0);
 		EhtlBookingRS reserva = (EhtlBookingRS) getReserva;
-		
+
 		// cancela reserva
-		EhtlRS responseCancelarReserva = ehtlService.cancelaReserva(reserva.getId());		
-		EhtlDataRS getCancelamento = responseCancelarReserva.getData().get(0);		
+		EhtlRS responseCancelarReserva = ehtlService.cancelaReserva(reserva.getId());
+		EhtlDataRS getCancelamento = responseCancelarReserva.getData().get(0);
 		EhtlCancelBookingRS responseCancelamento = (EhtlCancelBookingRS) getCancelamento;
+
+		Assert.isTrue(responseCancelamento.getAttributes().isCanceled(), "Reserva deve estar cancelada.");
+	}
+
+	@Test
+	void getIdCidade() throws JsonMappingException, JsonProcessingException, InvalidTokenException {
+
+		EhtlService ehtlService = new EhtlService("85213", "agenciaws@050539464720802020");
+
+		ArrayList<EhtlDataRS> response = ehtlService.getIdCidade("São Paulo").getData();
 		
-		Assert.isTrue(responseCancelamento.getAttributes().isCanceled(), "Reserva deve estar cancelada.");	
+		double latitudeSaoPaulo = -23.5505199;
+		double longitudeSaoPaulo = -46.6333094;
+		
+		ArrayList<EhtlSearchCitiesRS> cidades = new ArrayList<>();
+		
+		for (EhtlDataRS cidadesResponse : response) {
+			
+			EhtlSearchCitiesRS cidade = (EhtlSearchCitiesRS) cidadesResponse;
+			cidades.add(cidade);			
+		}
+
+		Optional<EhtlSearchCitiesRS> cidade = cidades.stream().filter(c -> c.getAttributes().getLatitude() == latitudeSaoPaulo &&
+				c.getAttributes().getLongitude() == longitudeSaoPaulo).findFirst();
+		
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2020, 10, 10);
+		
+		ArrayList<EhtlDataRS> disponibilidade = ehtlService.getDisponibilidade(cidade.get().getId(), calendar.getTime(), 2, 1)
+				.getData();
+		
+		Assert.notEmpty(disponibilidade, "Lista de disponibilidade não pode ser vazia.");
 	}
 
 }
